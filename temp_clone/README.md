@@ -1,0 +1,63 @@
+# HỆ THỐNG PHÂN LOẠI SẢN PHẨM QR & MÀU SẮC (DESKTOP & WEB APP)
+
+Ứng dụng Desktop bằng Python kết hợp **OpenCV + PyQt5 + Modbus TCP PLC** và Web App **Next.js (Vercel)** giúp tự động hóa phân loại sản phẩm trên băng tải thông qua **Webcam**, **Mã QR Đa Năng (Google Maps)** và **Màu sắc sản phẩm**.
+
+📌 **TÀI LIỆU NHẬT KÝ TIẾN TRÌNH & HƯỚNG DẪN SETUP MÁY MỚI:** [NHAT_KY_DU_AN_VA_HUONG_DAN_SETUP.md](file:///c:/Users/dayla/Downloads/Ccc/NHAT_KY_DU_AN_VA_HUONG_DAN_SETUP.md)
+
+---
+
+## ⚡ 1. CHẠY NHANH BẰNG FILE .EXE ĐỘC LẬP (0 SETUP)
+- Mở và chạy trực tiếp file `.exe` không cần cài Python:
+  [dist/HeThongPhanLoaiPLC_SingleFile.exe](file:///c:/Users/dayla/Downloads/Ccc/dist/HeThongPhanLoaiPLC_SingleFile.exe)
+
+---
+
+## 🚀 2. Hướng dẫn Cài đặt Môi trường Developer (Máy Mới)
+
+### Bước 1: Cài đặt thư viện Python
+Mở cửa sổ Command Prompt / Terminal tại thư mục dự án và chạy:
+```bash
+pip install -r requirements.txt
+```
+
+### Bước 2: Chạy ứng dụng Desktop Python
+```bash
+python main.py
+```
+
+### Bước 3: Chạy ứng dụng Web Next.js Generator
+```bash
+cd qr-generator-web
+npm install
+npm run dev
+```
+
+---
+
+## 🛠️ 3. Các Tính Năng Chính
+
+### 📸 A. Thu Nạp & Nhận Diện Hình Ảnh (Vision Pipeline)
+- **Webcam Realtime Live View**: Hiển thị luồng camera 30 FPS với độ trễ 0.005s (quét tốc độ cao trên băng chuyền).
+- **Đọc Mã QR Đa Năng**: Quét bằng ĐT $\rightarrow$ Mở vị trí Số Nhà trên Google Maps; Quét bằng Webcam $\rightarrow$ Kích hoạt Cửa PLC.
+- **Bộ Lọc Khử Chói Màn Hình ĐT**: Tự động lọc tương phản CLAHE + Otsu Binarization trong `qr_scanner.py`.
+- **Nhận Diện Màu Sắc (HSV)**: Khoanh vùng màu Đỏ, Xanh lá, Xanh dương. Tự động khử da người ($S \ge 150$).
+
+### 🏭 B. Truyền Thông PLC (Siemens / Mitsubishi / Delta / Omron...)
+- **Chuẩn truyền thông**: Modbus TCP Client (Tương thích Pymodbus 3.14+).
+- **Trình Giả Lập PLC (Built-in PLC Simulator)**: Chạy server Modbus TCP giả lập kiểm thử ngay trên máy tính mà không cần PLC thật.
+
+---
+
+## 📁 4. Cấu Trúc Mã Nguồn
+
+```text
+Ccc/
+├── main.py                          # Điểm khởi chạy ứng dụng Desktop Python
+├── build_exe.py                     # Script đóng gói ứng dụng ra tệp .EXE
+├── config.json                      # Cấu hình IP PLC, dải màu HSV và Rules
+├── requirements.txt                 # Danh sách thư viện Python
+├── NHAT_KY_DU_AN_VA_HUONG_DAN_SETUP.md # Nhật ký dự án & Hướng dẫn setup máy mới
+├── dist/
+│   └── HeThongPhanLoaiPLC_SingleFile.exe  # FILE CHẠY ĐỘC LẬP CHO WINDOWS
+└── qr-generator-web/                # ỨNG DỤNG WEB GENERATOR (NEXT.JS + VERCEL)
+```

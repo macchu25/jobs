@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  warehouse-hmi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: warehouse_hmi_server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./configs/plc-map.yaml:/app/configs/plc-map.yaml:ro
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - PLC_MODE=simulation
+      - PLC_PROTOCOL=modbus_tcp
+      - PLC_HOST=192.168.1.20
+      - PLC_PORT=502
+      - ENABLE_REAL_PLC_WRITES=false
+      - DATABASE_PATH=/app/data/hmi.db
+      - AUTH_ENABLED=false

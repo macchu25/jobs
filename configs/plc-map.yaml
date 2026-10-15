@@ -1,0 +1,230 @@
+# PLC Address Mapping Configuration (Industrial Modbus TCP Standard)
+# Supported types:
+# - coil (0xxxx: Read/Write boolean)
+# - discrete_input (1xxxx: Read-only boolean)
+# - holding_register (4xxxx: Read/Write 16-bit word)
+# - input_register (3xxxx: Read-only 16-bit word)
+
+protocol: modbus_tcp
+version: "1.0"
+
+machine:
+  auto_mode:
+    type: discrete_input
+    address: 10001
+    description: "Machine in AUTO mode (1) or MANUAL (0)"
+  running:
+    type: discrete_input
+    address: 10002
+    description: "Machine running active cycle"
+  emergency_stop:
+    type: discrete_input
+    address: 10003
+    description: "Physical E-STOP active (Normally Closed or Open per wiring, 1 = E-STOP ACTIVE)"
+  alarm_active:
+    type: discrete_input
+    address: 10004
+    description: "General PLC hardware fault or alarm"
+
+conveyor:
+  running:
+    type: discrete_input
+    address: 10010
+    description: "Conveyor motor run feedback"
+  start_command:
+    type: coil
+    address: 10
+    description: "Command coil to start conveyor"
+  stop_command:
+    type: coil
+    address: 11
+    description: "Command coil to stop conveyor"
+
+sensors:
+  input_sensor:
+    type: discrete_input
+    address: 10020
+    description: "Optical presence sensor at infeed entry"
+  output_sensor:
+    type: discrete_input
+    address: 10021
+    description: "Optical presence sensor at outfeed discharge"
+
+# Standard Industrial Command Handshake Registers
+handshake:
+  call_request:
+    type: coil
+    address: 50
+    description: "Web command trigger strobe"
+  call_bin_code:
+    type: holding_register
+    address: 40100
+    description: "Numerical bin index or code for called item"
+  command_busy:
+    type: discrete_input
+    address: 10050
+    description: "PLC acknowledged and command in execution"
+  command_done:
+    type: discrete_input
+    address: 10051
+    description: "PLC completed dispensing / operation"
+  command_error:
+    type: discrete_input
+    address: 10052
+    description: "PLC flagged command fault"
+  command_error_code:
+    type: input_register
+    address: 30050
+    description: "Error diagnostic code from PLC"
+
+# Bins Definition and Mapping (Da Nang Sorting Conveyor System)
+bins:
+  - id: "GATE_1"
+    name: "Cửa 1 - Q. Hải Châu"
+    product_code: "DISTRICT_HAI_CHAU"
+    product_name: "Quận Hải Châu (Màu Đỏ)"
+    capacity: 100
+    bin_numeric_code: 1
+    quantity:
+      type: holding_register
+      address: 40001
+    sensor:
+      type: discrete_input
+      address: 10031
+    call_command:
+      type: coil
+      address: 101
+    pusher_extend:
+      type: coil
+      address: 111
+    pusher_retract:
+      type: coil
+      address: 121
+    pusher_extended_sensor:
+      type: discrete_input
+      address: 10061
+
+  - id: "GATE_2"
+    name: "Cửa 2 - Q. Thanh Khê"
+    product_code: "DISTRICT_THANH_KHE"
+    product_name: "Quận Thanh Khê (Màu Xanh lá)"
+    capacity: 100
+    bin_numeric_code: 2
+    quantity:
+      type: holding_register
+      address: 40002
+    sensor:
+      type: discrete_input
+      address: 10032
+    call_command:
+      type: coil
+      address: 102
+    pusher_extend:
+      type: coil
+      address: 112
+    pusher_retract:
+      type: coil
+      address: 122
+    pusher_extended_sensor:
+      type: discrete_input
+      address: 10062
+
+  - id: "GATE_3"
+    name: "Cửa 3 - Q. Liên Chiểu"
+    product_code: "DISTRICT_LIEN_CHIEU"
+    product_name: "Quận Liên Chiểu (Màu Xanh dương)"
+    capacity: 100
+    bin_numeric_code: 3
+    quantity:
+      type: holding_register
+      address: 40003
+    sensor:
+      type: discrete_input
+      address: 10033
+    call_command:
+      type: coil
+      address: 103
+    pusher_extend:
+      type: coil
+      address: 113
+    pusher_retract:
+      type: coil
+      address: 123
+    pusher_extended_sensor:
+      type: discrete_input
+      address: 10063
+
+  - id: "GATE_4"
+    name: "Cửa 4 - Q. Ngũ Hành Sơn"
+    product_code: "DISTRICT_NGU_HANH_SON"
+    product_name: "Quận Ngũ Hành Sơn (Mã QR)"
+    capacity: 100
+    bin_numeric_code: 4
+    quantity:
+      type: holding_register
+      address: 40004
+    sensor:
+      type: discrete_input
+      address: 10034
+    call_command:
+      type: coil
+      address: 104
+    pusher_extend:
+      type: coil
+      address: 114
+    pusher_retract:
+      type: coil
+      address: 124
+    pusher_extended_sensor:
+      type: discrete_input
+      address: 10064
+
+  - id: "GATE_5"
+    name: "Cửa 5 - Q. Cẩm Lệ"
+    product_code: "DISTRICT_CAM_LE"
+    product_name: "Quận Cẩm Lệ (Mã QR)"
+    capacity: 100
+    bin_numeric_code: 5
+    quantity:
+      type: holding_register
+      address: 40005
+    sensor:
+      type: discrete_input
+      address: 10035
+    call_command:
+      type: coil
+      address: 105
+    pusher_extend:
+      type: coil
+      address: 115
+    pusher_retract:
+      type: coil
+      address: 125
+    pusher_extended_sensor:
+      type: discrete_input
+      address: 10065
+
+  - id: "GATE_REJECT"
+    name: "Cửa Loại - Reject"
+    product_code: "REJECT"
+    product_name: "Sản Phẩm Lỗi / Không QR (Sig: 99)"
+    capacity: 100
+    bin_numeric_code: 99
+    quantity:
+      type: holding_register
+      address: 40006
+    sensor:
+      type: discrete_input
+      address: 10036
+    call_command:
+      type: coil
+      address: 199
+    pusher_extend:
+      type: coil
+      address: 119
+    pusher_retract:
+      type: coil
+      address: 129
+    pusher_extended_sensor:
+      type: discrete_input
+      address: 10069

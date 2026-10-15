@@ -1,0 +1,11 @@
+{
+  "name": "plc-sorting-system",
+  "version": "1.0.0",
+  "description": "Da Nang Warehouse Sorting System with Computer Vision, Modbus TCP PLC and Web HMI",
+  "scripts": {
+    "start": "cmd /c run_full_system.bat",
+    "dev": "cmd /c run_full_system.bat",
+    "backend": "cmd /c run_python_headless.bat",
+    "frontend": "cd frontend && npm run dev"
+  }
+}
