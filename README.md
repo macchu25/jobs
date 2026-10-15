@@ -1,225 +1,252 @@
-# Warehouse HMI - Hệ Thống Web HMI / PWA Phân Loại & Xuất Hàng Tự Động Với PLC
+# 🏭 Warehouse Sorting & Dispensing HMI
 
-> **Hệ thống Web HMI / PWA chuẩn công nghiệp (Industrial Automation)** điều khiển dây chuyền phân loại và xuất hàng tự động với hai chế độ hoạt động: **Mô phỏng hoàn chỉnh (Simulation Mode)** và **Kết nối PLC thật (Real PLC Mode)**.
+> **Hệ Thống Phân Loại Hàng Hóa Tự Động Kết Hợp Thị Giác Máy Tính (OpenCV AI Vision), Mô Phỏng Dây Chuyền Băng Tải Digital Twin 60 FPS & Điều Khiển Phần Cứng PLC Modbus TCP.**
 
----
-
-## 1. Kiến Trúc Tổng Quan Hệ Thống
-
-```
-                     ┌─────────────────┐
-                     │   PLC THẬT      │
-                     └────────┬────────┘
-                              │ Modbus TCP / Fieldbus Driver
-                              ▼
-                    ┌───────────────────┐
-                    │   PLCAdapter      │
-                    ├───────────────────┤
-                    │ MockPLCAdapter    │ <--- Simulation Engine
-                    │ RealPLCAdapter    │ <--- Real Modbus Driver
-                    └────────┬──────────┘
-                             │
-                             ▼
-                    ┌───────────────────┐
-                    │   Go Backend      │
-                    │                   │
-                    │ REST API          │
-                    │ WebSocket Hub     │
-                    │ Alarm Engine      │
-                    │ Inventory Service │
-                    │ History Log       │
-                    │ Command Engine    │
-                    │ SQLite Database   │
-                    └────────┬──────────┘
-                             │
-                             ▼
-                    ┌───────────────────┐
-                    │ React Web HMI PWA │
-                    │ (Tailwind + TS)   │
-                    └────────┬──────────┘
-                             │ LAN / WiFi
-                ┌────────────┴────────────┐
-                ▼                         ▼
-        PC / Máy Tính Bảng            Điện Thoại
-```
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Modbus TCP](https://img.shields.io/badge/Protocol-Modbus%20TCP-FF6F00)](https://modbus.org/)
+[![PWA Ready](https://img.shields.io/badge/PWA-Ready-5A0FC8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 
 ---
 
-## 2. Tính Năng Cốt Lõi
-
-### Hai Chế Độ Hoạt Động (Dual-Mode):
-1. **Simulation Mode (Mô phỏng)**:
-   - Mô phỏng toàn bộ chu trình phân loại và xuất hàng có độ trễ vật lý (500–1500ms).
-   - Mô phỏng cảm biến quang học infeed/outfeed, băng tải chạy, xylanh đẩy hàng, số lượng tồn kho từng ô.
-   - Hỗ trợ kích hoạt kẹt hàng (JAM), mất kết nối PLC, ô đầy, tự động sinh hàng ngẫu nhiên.
-2. **Real PLC Mode (PLC Thật)**:
-   - Kết nối PLC thật qua **Modbus TCP Driver**.
-   - Chu trình handshake công nghiệp: `Request bit -> PLC ACK/Busy -> Hardware Confirm -> Clear`.
-   - Cơ chế bảo vệ **`ENABLE_REAL_PLC_WRITES=false`** mặc định: Cho phép đọc trạng thái nhưng khóa ghi phần cứng cho đến khi người dùng chủ động kích hoạt.
-   - Cơ chế tự động kết nối lại (Auto Reconnect) với exponential backoff.
-
-### PWA & An Toàn Vận Hành (Safety & Failsafe):
-- **Full Screen Offline Overlay**: Khi điện thoại mất kết nối WiFi/Server, màn hình đỏ **"SERVER OFFLINE - Control commands disabled"** lập tức khóa toàn bộ nút điều khiển để ngăn chặn bấm nhầm dựa trên dữ liệu cũ.
-- Service Worker chỉ cache tài nguyên tĩnh (HTML/CSS/JS/Icons); tuyệt đối **NetworkOnly** đối với API và WebSocket.
-- Tuân thủ an toàn: Nút dừng khẩn cấp E-Stop trên Web là chỉ báo giám sát và không thay thế cho mạch E-Stop phần cứng.
+## 📑 Mục Lục
+1. [Giới Thiệu Tổng Quan](#1-giới-thiệu-tổng-quan)
+2. [Tính Năng Nổi Bật](#2-tính-năng-nổi-bật)
+3. [Kiến Trúc Hệ Thống (System Architecture)](#3-kiến-trúc-hệ-thống)
+4. [Hướng Dẫn Khởi Động Nhanh (1 Click)](#4-hướng-dẫn-khởi-động-nhanh)
+5. [Hệ Thống Mã QR Đa Tầng (Dual-Mode QR)](#5-hệ-thống-mã-qr-đa-tầng)
+6. [Bảng Phân Bổ Địa Chỉ PLC Modbus (Memory Map)](#6-bảng-phân-bổ-địa-chỉ-plc-modbus)
+7. [Cấu Trúc Thư Mục Dự Án](#7-cấu-trúc-thư-mục-dự-án)
+8. [Cấu Hình & Tinh Chỉnh Hệ Thống](#8-cấu-hình--tinh-chỉnh)
+9. [Triển Khai Mạng LAN & Thiết Bị Di Động](#9-triển-khai-mạng-lan--thiết-bị-di-động)
 
 ---
 
-## 3. Cấu Trúc Mã Nguồn
+## 1. Giới Thiệu Tổng Quan
+
+Dự án cung cấp giải pháp toàn diện cho dây chuyền phân loại bưu phẩm, đơn hàng và kiện hàng tự động:
+* **Lõi Xử Lý Thị Giác Máy Tính (Python + OpenCV)**: Nhận diện mã QR Google Maps và màu sắc vật thể với tốc độ cao (30 FPS, độ trễ < 15ms), lọc khử chói CLAHE và loại trừ da người.
+* **Giao Diện Điều Khiển Web HMI & SCADA Hiện Đại**: Xây dựng trên React, TypeScript và TailwindCSS theo phong cách Vault Industrial, tương thích 100% trên PC, máy tính bảng và smartphone (PWA).
+* **Mô Phỏng Song Song (Digital Twin Dual-View)**: Hiển thị đồng thời **Camera AI** và **Băng Chuyền Mô Phỏng 60 FPS**. Ngay khi camera phát hiện mã QR, kiện hàng có dán đúng mã QR đó lập tức xuất hiện trên băng chuyền ảo, di chuyển đến đúng Cửa và kích hoạt cần gạt xylanh khí nén!
+* **Kết Nối PLC Công Nghiệp**: Hỗ trợ chuẩn Modbus TCP kết nối trực tiếp với các dòng PLC (Siemens, Mitsubishi, Delta, Schneider, Omron...) kèm theo bộ giả lập **PLC Simulator tích hợp sẵn** giúp chạy thử nghiệm ngay mà không cần phần cứng.
+
+---
+
+## 2. Tính Năng Nổi Bật
+
+### 🎥 A. Song Song Digital Twin (Dual-View Workspace)
+* **Bên 1 - Camera AI**:
+  * Đa nguồn phát: **Webcam Máy Tính**, **Camera Ảo Test** (tự động giả lập đưa mẫu QR vào quét), **Luồng Python OpenCV** và **Tải File Ảnh/Video**.
+  * Khung ngắm công nghiệp **ROI (Region Of Interest)** tự động vẽ bounding box quang học màu xanh quanh mã QR khi phát hiện.
+  * Âm thanh phản hồi quét chuẩn mã vạch công nghiệp (Beep sound).
+* **Bên 2 - Băng Chuyền Mô Phỏng (Digital Twin Conveyor 60 FPS)**:
+  * Thể hiện trọn vẹn kết cấu dây chuyền: Con lăn cơ khí, đầu quét cảm biến, 5 cửa phân loại (Cửa 1: Hải Châu, Cửa 2: Thanh Khê, Cửa 3: Liên Chiểu, Cửa 4: Ngũ Hành Sơn, Cửa 5: Cẩm Lệ) và Cửa Loại Reject (Sig 99).
+  * **Kiện hàng mang đúng hình ảnh mã QR vừa quét**: Chạy trên băng tải, xylanh cơ khí tự động vươn ra gạt kiện hàng vào thùng, đèn LED chớp sáng và gửi tín hiệu Modbus PLC tức thì.
+  * Tích hợp sẵn 6 nút bấm thử quét nhanh 1-chạm (`Cửa 1` $\rightarrow$ `Cửa 5` & `Reject`) để thử nghiệm phản ứng của băng chuyền mà không cần đưa vật thể trước camera.
+
+### 🖨️ B. Tạo & In Tem Mã QR Toàn Quốc (63 Tỉnh Thành)
+* **Định Dạng Dual-Purpose**:
+  * **Quét bằng Camera / Băng chuyền**: Nhận diện chuỗi cấu trúc và kích hoạt Cửa PLC tương ứng (VD: `CỬA 1 [DISTRICT_HAI_CHAU]`).
+  * **Quét bằng Điện Thoại**: Tự động mở Google Maps dẫn đường chính xác tới số nhà, tên đường.
+* **Bộ Mẫu Sẵn & Tự Nhập**:
+  * 25 mẫu tem đại diện cho các quận/huyện 3 miền Bắc - Trung - Nam.
+  * Chế độ **Tự Nhập 63 Tỉnh Thành**: Chọn bất kỳ tỉnh thành nào của Việt Nam, nhập số nhà / tên đường, gán Cửa Kích Hoạt PLC (Gate ID 1 - 99).
+  * Xem trước tem decal và hỗ trợ tải ảnh PNG chất lượng cao hoặc in hàng loạt.
+
+### 🏭 C. Kết Nối PLC Linh Hoạt & An Toàn
+* Đổi địa chỉ IP, Cổng (Port), Slave ID, thanh ghi ghi tín hiệu trực tiếp trên giao diện Web mà không cần khởi động lại server.
+* Tích hợp sẵn **PLC Simulator** (mặc định Port 503) tự động phản hồi thanh ghi và giả lập cảm biến.
+* Khóa an toàn phần cứng: Cho phép bật/tắt quyền ghi cơ cấu chấp hành thật để tránh kích hoạt nhầm khi bảo trì.
+
+---
+
+## 3. Kiến Trúc Hệ Thống
 
 ```
-warehouse-hmi/
-├── backend/
-│   ├── cmd/server/main.go          # Entrypoint Go Server, graceful shutdown
-│   ├── internal/
-│   │   ├── api/                    # 20+ REST API endpoints & Web handlers
-│   │   ├── plc/
-│   │   │   ├── adapter.go          # PLCAdapter interface chuẩn
-│   │   │   ├── mock/adapter.go     # MockPLCAdapter cầu nối simulation
-│   │   │   ├── real/adapter.go     # RealPLCAdapter với handshake & write-lock
-│   │   │   └── driver/modbus/      # Driver Modbus TCP thuần Go
-│   │   ├── simulation/             # State machine mô phỏng dây chuyền
-│   │   ├── machine/                # Quản lý trạng thái máy, interlocks
-│   │   ├── inventory/              # Dịch vụ quản lý số lượng tồn kho
-│   │   ├── command/                # Máy trạng thái lệnh, khóa chống trùng ô
-│   │   ├── alarm/                  # Động cơ cảnh báo công nghiệp
-│   │   ├── database/               # SQLite pure-Go (không cần CGO/GCC)
-│   │   ├── websocket/              # WebSocket Hub, push snapshot & delta
-│   │   └── config/                 # Parser .env & plc-map.yaml
-│   └── go.mod
-├── frontend/
-│   ├── src/
-│   │   ├── components/             # Header, Sidebar, BottomNav, MachineFlowView, BinCard
-│   │   ├── pages/                  # Dashboard, Bins, Manual, Alarms, History, Settings
-│   │   ├── stores/                 # Zustand HMI State store
-│   │   └── services/               # API & Resilient WebSocket client
-│   ├── vite.config.ts              # Vite PWA cấu hình Service Worker
-│   └── package.json
+                                ┌─────────────────────────────────────────┐
+                                │          WEBCAM / CAMERA CÔNG NGHIỆP    │
+                                └────────────────────┬────────────────────┘
+                                                     │ Video Frames (30 FPS)
+                                                     ▼
+┌──────────────────┐    Modbus TCP     ┌─────────────────────────────────────────┐
+│     PLC THẬT     │◄─────────────────►│         PYTHON AI VISION ENGINE         │
+│(Siemens/Mitsubi) │  Holding Reg /    │ • OpenCV ROI & QR Scanner (jsQR/pyzbar) │
+├──────────────────┤  Discrete Inputs  │ • Phân loại màu sắc HSV                 │
+│  PLC SIMULATOR   │                   │ • Cầu nối WebBridge (FastAPI/WebSocket) │
+│  (Port 503 built)│                   └────────────────────┬────────────────────┘
+└──────────────────┘                                        │ REST API & WS Event Push
+                                                            │ (Port 8080)
+                                                            ▼
+                                       ┌─────────────────────────────────────────┐
+                                       │            WEB HMI DASHBOARD            │
+                                       │ • Dual-View Digital Twin (Camera + Belt)│
+                                       │ • Điều khiển & Giám sát trạng thái Cửa  │
+                                       │ • Tạo & In tem QR Decal 63 tỉnh thành   │
+                                       │ • Đa ngôn ngữ (Tiếng Việt / English)    │
+                                       └────────────────────┬────────────────────┘
+                                                            │ LAN / Wi-Fi
+                                     ┌──────────────────────┴──────────────────────┐
+                                     ▼                                             ▼
+                             Laptop / PC Giám Sát                          Smartphone / Tablet PWA
+```
+
+---
+
+## 4. Hướng Dẫn Khởi Động Nhanh
+
+### Cách 1: Khởi Động 1-Click (Khuyên Dùng)
+Chỉ cần click đúp vào file kịch bản tự động tại thư mục gốc:
+* **[`start.bat`](start.bat)** hoặc **[`run_full_system.bat`](run_full_system.bat)**
+
+Hệ thống sẽ tự động:
+1. Khởi động Python Backend, OpenCV Vision và PLC Simulator tại `http://localhost:8080`.
+2. Khởi động Web HMI Frontend tại `http://localhost:5173`.
+3. Tự động mở trình duyệt web lên màn hình làm việc.
+
+---
+
+### Cách 2: Khởi Chạy Song Song (Giao Diện Desktop PyQt5 + Web HMI)
+Dành cho trường hợp bạn vừa muốn xem cửa sổ phần mềm PyQt5 truyền thống, vừa muốn mở Web HMI trên trình duyệt/điện thoại:
+1. Mở **[`run_python_app.bat`](run_python_app.bat)**: Mở giao diện Desktop PyQt5 và bật WebBridge.
+2. Mở **[`run_web.bat`](run_web.bat)**: Mở giao diện Web HMI tại `http://localhost:5173`.
+
+---
+
+### Cách 3: Chạy Từng Phần Bằng Lệnh (Developer Mode)
+
+#### 1. Yêu Cầu Cài Đặt:
+* **Python**: 3.10 trở lên.
+* **Node.js**: 18 trở lên.
+
+#### 2. Cài Đặt Thư Viện Python:
+```bash
+cd temp_clone
+pip install -r requirements.txt
+```
+
+#### 3. Chạy Python Backend (Headless Mode):
+```bash
+python run_headless.py
+```
+
+#### 4. Cài Đặt & Chạy Web Frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Truy cập giao diện tại: `http://localhost:5173`.
+
+---
+
+## 5. Hệ Thống Mã QR Đa Tầng
+
+Mỗi mã QR được tạo từ menu **Tạo Tem Mã QR** mang định dạng URL có gắn neo dữ liệu (Hash Anchor):
+```text
+https://maps.google.com/?q=123+Bach+Dang+Da+Nang#DISTRICT_HAI_CHAU
+```
+
+| Thiết Bị Quét | Kết Quả Xử Lý |
+| :--- | :--- |
+| **Điện Thoại Di Động** | Trình quét camera mở trực tiếp ứng dụng Google Maps dẫn đường tới `123 Bạch Đằng, Đà Nẵng`. |
+| **Camera AI / Băng Chuyền** | Hệ thống bóc tách chuỗi `#DISTRICT_HAI_CHAU`, so khớp Quy tắc và kích hoạt **Cửa 1** trên PLC. |
+
+---
+
+## 6. Bảng Phân Bổ Địa Chỉ PLC Modbus
+
+### 1. Bảng Phân Loại Cửa & Mã Tín Hiệu:
+| Cửa Phân Loại | Khu Vực / Tên | Màu Sắc | Từ Khóa QR | Tín Hiệu Ghi PLC (Register 0) |
+| :---: | :--- | :---: | :--- | :---: |
+| **Cửa 1** | Quận Hải Châu | Đỏ (`#FF3B30`) | `HAI_CHAU` | `1` |
+| **Cửa 2** | Quận Thanh Khê | Xanh lá (`#34C759`) | `THANH_KHE` | `2` |
+| **Cửa 3** | Quận Liên Chiểu | Xanh dương (`#007AFF`) | `LIEN_CHIEU` | `3` |
+| **Cửa 4** | Quận Ngũ Hành Sơn | Cam (`#FF9500`) | `NGU_HANH_SON` | `4` |
+| **Cửa 5** | Quận Cẩm Lệ | Tím (`#AF52DE`) | `CAM_LE` | `5` |
+| **Cửa Loại** | Hàng Lỗi / Không QR | Đỏ Cảnh Báo (`#FF453A`) | `NONE` | `99` |
+
+### 2. Sơ Đồ Địa Chỉ Cảm Biến & Xylanh Công Nghiệp (`configs/plc-map.yaml`):
+* `10020` (Discrete Input): Cảm biến quang cửa vào (Infeed Entry Sensor).
+* `10021` (Discrete Input): Cảm biến quang tại vị trí Camera quét.
+* `10031` $\rightarrow$ `10035` (Discrete Input): Cảm biến quang phát hiện kiện hàng tại từng Cửa 1 $\rightarrow$ Cửa 5.
+* `10061` $\rightarrow$ `10065` (Discrete Input): Cảm biến từ hành trình xylanh đẩy tại từng Cửa.
+* `111` $\rightarrow$ `115` (Coil): Cuộn hút van điện từ kích hoạt xylanh gạt Cửa 1 $\rightarrow$ Cửa 5.
+* `40001` $\rightarrow$ `40005` (Holding Register): Bộ đếm số lượng kiện hàng thực tế trong từng khay/thùng.
+
+---
+
+## 7. Cấu Trúc Thư Mục Dự Án
+
+```text
+plx/
+├── start.bat                   # Kịch bản khởi động 1-click toàn bộ hệ thống
+├── run_full_system.bat         # Khởi động Python Backend + Web Frontend
+├── run_python_headless.bat     # Chạy ngầm Python Backend (không mở cửa sổ)
+├── run_python_app.bat          # Chạy Python Desktop PyQt5 gốc
+├── run_web.bat                 # Chạy dev server Web HMI
 ├── configs/
-│   └── plc-map.yaml                # Cấu hình địa chỉ Coils, Registers PLC
-├── scripts/
-│   ├── dev.ps1                     # Khởi chạy môi trường Dev (Vite + Go)
-│   ├── build.ps1                   # Build production ra warehouse-hmi.exe
-│   └── run.ps1                     # Chạy production và hiển thị IP LAN
-├── docs/
-│   ├── PLC_INTEGRATION.md          # Tài liệu tích hợp PLC, handshake, driver mới
-│   ├── PWA.md                      # Hướng dẫn cài PWA lên Android & iOS
-│   └── DEPLOY_WINDOWS.md           # Hướng dẫn mở cổng Firewall & kết nối WiFi
-├── docker-compose.yml
-├── Dockerfile
-├── .env.example
-└── README.md
+│   └── plc-map.yaml            # Bảng ánh xạ địa chỉ PLC Modbus TCP chuẩn
+├── frontend/                   # Ứng dụng Web HMI React + TypeScript + Tailwind
+│   ├── src/
+│   │   ├── components/         # Các linh kiện giao diện (Dual-View, Bins, Charts)
+│   │   ├── pages/              # Trang Dashboard, Vision AI, Bins, Manual, QR, Settings
+│   │   ├── stores/             # Quản lý trạng thái ứng dụng (Zustand)
+│   │   ├── utils/              # Bộ phân loại thị giác máy tính & mã QR
+│   │   └── i18n/               # Từ điển đa ngôn ngữ (Tiếng Việt & English)
+│   └── vite.config.ts          # Cấu hình Vite & PWA Service Worker
+└── temp_clone/                 # Mã nguồn Python Core & OpenCV AI Vision
+    ├── main.py                 # Điểm chạy ứng dụng Desktop PyQt5 gốc
+    ├── run_headless.py         # Điểm chạy chế độ Headless Server
+    ├── config.json             # Cấu hình ngưỡng màu HSV, IP PLC và Quy tắc
+    ├── requirements.txt        # Danh sách gói thư viện Python (opencv, pymodbus, fastapi)
+    └── src/
+        ├── plc/                # Modbus Client & Bộ giả lập PLCSimulator
+        ├── server/             # WebBridge (FastAPI, MJPEG stream, WebSocket)
+        ├── ui/                 # Giao diện cửa sổ Desktop PyQt5
+        └── vision/             # Camera thread, thuật toán QR & màu sắc
 ```
 
 ---
 
-## 4. Yêu Cầu Môi Trường
+## 8. Cấu Hình & Tinh Chỉnh
 
-- **Hệ điều hành**: Windows 10 / 11, Windows Server (hoặc Linux/macOS).
-- **Go**: Phiên bản 1.22+ (đã xác thực trên Go 1.26.2).
-- **Node.js**: Phiên bản 18+ (đã xác thực trên Node 24.14.0, npm 11.9.0).
+### 1. Cấu hình PLC & Ngưỡng Màu trong `temp_clone/config.json`:
+```json
+{
+  "plc": {
+    "ip": "192.168.0.1",
+    "port": 503,
+    "slave_id": 1,
+    "register_address": 0,
+    "simulation_mode": true
+  },
+  "camera": {
+    "device_index": 0,
+    "width": 1280,
+    "height": 720,
+    "fps": 30
+  }
+}
+```
+*Bạn có thể chỉnh sửa trực tiếp các thông số này ngay trên menu **Cấu Hình & Cài Đặt** của Web HMI mà không cần mở file code.*
 
 ---
 
-## 5. Hướng Dẫn Khởi Chạy Môi Trường Development
+## 9. Triển Khai Mạng LAN & Thiết Bị Di Động
 
-Mở PowerShell tại thư mục dự án và chạy:
-```powershell
-.\scripts\dev.ps1
-```
-Hoặc chạy riêng biệt 2 terminal:
-- **Terminal 1 (Backend Go)**:
-  ```powershell
-  cd backend
-  go run cmd/server/main.go
-  ```
-  Backend sẽ chạy tại: `http://localhost:8080`.
-- **Terminal 2 (Frontend Vite)**:
-  ```powershell
-  cd frontend
-  npm run dev
-  ```
-  Frontend sẽ chạy tại: `http://localhost:5173` (tự động proxy `/api` và `/ws` về port 8080).
+1. **Tìm địa chỉ IP máy tính**: Mở Terminal gõ `ipconfig` (tìm dòng `IPv4 Address: 192.168.x.x`).
+2. **Mở cổng Windows Firewall (nếu cần)**: Cho phép truy cập cổng `5173` (Frontend) và `8080` (Backend).
+3. **Mở trên điện thoại/máy tính bảng**: Mở trình duyệt và truy cập:
+   ```text
+   http://192.168.x.x:5173
+   ```
+4. **Cài đặt dạng ứng dụng (PWA)**: Nhấn biểu tượng *"Thêm vào Màn hình chính"* trên Chrome hoặc Safari để sử dụng toàn màn hình như ứng dụng native.
 
 ---
 
-## 6. Hướng Dẫn Build & Chạy Production Trên Windows
-
-Chỉ cần chạy 1 lệnh tự động:
-```powershell
-.\scripts\build.ps1
-```
-Script sẽ build toàn bộ frontend, copy vào thư mục `release/dist`, biên dịch Go thành file thực thi duy nhất:
-```
-release/warehouse-hmi.exe
-```
-
-Để khởi chạy server:
-```powershell
-.\scripts\run.ps1
-```
-Server sẽ tự động lắng nghe trên mọi card mạng `0.0.0.0:8080` và in ra địa chỉ IP LAN để kết nối điện thoại.
-
----
-
-## 7. Cách Truy Cập Từ Điện Thoại & Máy Tính Bảng Cùng Mạng WiFi
-
-### Bước 1: Tìm IP máy tính Windows
-Mở PowerShell gõ lệnh `ipconfig`. Tìm dòng:
-```
-IPv4 Address: 192.168.1.100
-```
-
-### Bước 2: Cấu hình Windows Firewall mở port 8080
-Mở PowerShell với quyền **Administrator** và chạy:
-```powershell
-New-NetFirewallRule -DisplayName "Warehouse HMI Port 8080" -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Allow
-```
-
-### Bước 3: Mở trên điện thoại
-Kết nối điện thoại vào cùng mạng WiFi với máy tính và mở trình duyệt:
-```
-http://192.168.1.100:8080
-```
-*(Xem hướng dẫn chi tiết tại [docs/PWA.md](file:///c:/Users/NHU%20HUU/Downloads/plx/docs/PWA.md) để cài app lên màn hình chính điện thoại).*
-
----
-
-## 8. Nơi Điều Chỉnh Cấu Hình PLC
-
-### 1. Đổi IP và Cổng PLC
-Mở file `.env`:
-```ini
-PLC_MODE=real
-PLC_PROTOCOL=modbus_tcp
-PLC_HOST=192.168.1.20
-PLC_PORT=502
-PLC_POLL_INTERVAL_MS=250
-```
-
-### 2. Cho Phép Ghi Cơ Cấu Chấp Hành Thật (Kích Hoạt Điều Khiển Vật Lý)
-Mặc định `ENABLE_REAL_PLC_WRITES=false` để chống kích nhầm cơ cấu. Khi đã sẵn sàng vận hành máy thật:
-```ini
-ENABLE_REAL_PLC_WRITES=true
-```
-
-### 3. Điều Chỉnh Sơ Đồ Địa Chỉ PLC (Address Mapping)
-Mở file `configs/plc-map.yaml` để map địa chỉ Coil và Register tương ứng với chương trình PLC của bạn:
-- `machine.auto_mode`, `machine.running`, `machine.emergency_stop`
-- `conveyor.running`, `conveyor.start_command`, `conveyor.stop_command`
-- `sensors.input_sensor`, `sensors.output_sensor`
-- `handshake.call_request`, `handshake.command_busy`, `handshake.command_done`
-- Danh sách từng ô chứa `bins`: `A01`, `A02`, `A03`, `B01`, `B02`, `B03` (địa chỉ thanh ghi tồn kho, cảm biến quang, cuộn coil kích xylanh đẩy/thu).
-
----
-
-## 9. Tích Hợp Với Model PLC Cụ Thể Trong Tương Lai
-
-Nếu hệ thống của bạn sử dụng một model PLC chuyên dụng (Siemens S7-1200/1500, Mitsubishi FX5U/Q-Series, Omron, Rockwell Allen-Bradley, hoặc OPC-UA), bạn chỉ cần cung cấp các thông tin sau:
-1. **Hãng sản xuất (PLC Manufacturer)**: ví dụ Siemens / Mitsubishi / Schneider.
-2. **Model PLC**: ví dụ S7-1200 CPU 1214C.
-3. **Giao thức truyền thông**: ví dụ Siemens S7 Protocol (cổng 102), Modbus TCP (cổng 502), hoặc OPC-UA.
-4. **Địa chỉ IP và Rack/Slot**: ví dụ `192.168.1.20`, Rack 0, Slot 1.
-5. **Bảng phân bổ địa chỉ (Memory/Tag Map)**: Danh sách bit và byte tương ứng (ví dụ `DB1.DBX0.0` cho lệnh gọi hàng, `MW100` cho tồn kho).
-
-**Toàn bộ giao diện HMI, WebSocket, API và logic nghiệp vụ được giữ nguyên hoàn toàn**, chỉ cần bổ sung driver tương ứng theo tài liệu [docs/PLC_INTEGRATION.md](file:///c:/Users/NHU%20HUU/Downloads/plx/docs/PLC_INTEGRATION.md).
+## 📜 Giấy Phép & Bản Quyền
+Dự án được phân phối dưới giấy phép **MIT License**. Mọi quyền được bảo lưu.
