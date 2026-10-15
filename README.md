@@ -177,6 +177,8 @@ https://maps.google.com/?q=123+Bach+Dang+Da+Nang#DISTRICT_HAI_CHAU
 * `111` $\rightarrow$ `115` (Coil): Cuộn hút van điện từ kích hoạt xylanh gạt Cửa 1 $\rightarrow$ Cửa 5.
 * `40001` $\rightarrow$ `40005` (Holding Register): Bộ đếm số lượng kiện hàng thực tế trong từng khay/thùng.
 
+> 📖 **Xem tài liệu giải thích chi tiết vai trò mắt thần, nguyên lý hoạt động & kết nối PLC tại:** [docs/GIAI_THICH_CAM_BIEN_VA_NGUYEN_LY.md](docs/GIAI_THICH_CAM_BIEN_VA_NGUYEN_LY.md)
+
 ---
 
 ## 7. Cấu Trúc Thư Mục Dự Án
